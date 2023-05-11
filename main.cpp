@@ -105,7 +105,7 @@ float getEntropy(CSVData data, map<string, string> attributes, vector<string> ti
             {
                 positiveCounter++;
             }
-            cout << data[j][13] << '\t' << positiveCounter << '\t' << totalCount << endl;
+            //cout << data[j][13] << '\t' << positiveCounter << '\t' << totalCount << endl;
         }
     }
     if (totalCount == 0) // no encontré ningun caso que cumpla esas condiciones.

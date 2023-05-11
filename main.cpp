@@ -8,9 +8,10 @@
 using namespace std;
 using json = nlohmann::json;
 
-int dataConditioning(CSVData data);
+CSVData dataConditioning(CSVData data);
 void dataConverter(int separator, string *data);
 json saveToJsonFile(CSVData data, string path, string csvPath);
+float getEntropy(CSVData data, map<string, string> attributes, vector<string> titles);
 
 int main(void)
 {
@@ -22,27 +23,115 @@ int main(void)
         return 1;
     }
 
-    // La primer columna contiene los nombres de los campos, no nos interesa conservarla.
+    // La primer columna contiene los nombres de los campos, nos interesa conservarla pero no en el CSVData.
+    vector<string> titles;
+    int i;
+    for (i = 0; i < 14; i++)
+    {
+        titles.push_back(heart[0][i]);
+    }
+
     heart.erase(heart.begin());
 
-    dataConditioning(heart);
+    heart = dataConditioning(heart);
 
     // Reordeno heart
     std::random_device rd; // semilla aleatoria
     std::mt19937 g(rd());
     std::shuffle(heart.begin(), heart.end(), g);
 
-    json jsonData = saveToJsonFile(heart, "jsonData.json", "../../heart.csv");
+    map<string, string> attributes = {{"age", "1"}, {"sex", "1"}};
+
+    float entropy = getEntropy(heart, attributes, titles);
+    cout << entropy << endl;
+
+    // json jsonData = saveToJsonFile(heart, "jsonData.json", "../../heart.csv");
 
     return 0;
 }
 
+/******************************************************************************************************
+ * Calcula la entropía de un conjunto de datos
+ * data: CSVData que contiene la informacion a analizar
+ * attributes: mapa donde la clave es un int que representa la columna del atributo, y el valor
+ *  como un string
+ *  Si no encuentra casos que cumplan las condiciones solicitadas ( se le solicitan casos inexistentes),
+ * devuelve -1 indicando error.
+ *********************************************************************************************************/
+float getEntropy(CSVData data, map<string, string> attributes, vector<string> titles)
+{
+    float entropy = 0, positiveCounter = 0;
+    int last = (int)(data.size() * 0.8); // contiene la posicion del ultimo elemento a analizar
+    float pi = 0;
+    int totalCount = 0;
+
+    if (attributes.empty()) // Calculo la entropía del nodo raiz
+    {
+        for (totalCount = 0; totalCount < last; totalCount++)
+        {
+            if (data[totalCount][13] == "1")
+            {
+                positiveCounter++; // cuenta casos de output = 1
+            }
+        }
+        pi = positiveCounter / totalCount; // Proporción de casos positivos.
+        if (pi != 0)
+            entropy += pi * log2(pi);
+
+        pi = (totalCount - positiveCounter) / totalCount; // Proporción de casos negativos.
+        if (pi != 0)
+            entropy += pi * log2(pi);
+
+        return (-1) * entropy;
+    }
+
+    int i, j, flag;
+    for (j = 0; j < last; j++)
+    {
+        flag = 0;
+        for (i = 0; i < 13; i++)
+        {
+            auto it = attributes.find(titles[i]); // verifico si el atributo de la instancia coincide con alguno que debo fijar
+            if (it != attributes.end() && (data[j][i] == it->second))
+            {
+                flag++; // si el caso cumple con la condicion solicitada, incremento el flag que cuenta estos casos.
+            }
+        }
+
+        if (flag == attributes.size()) // si el caso cumple todos los atributos
+        {
+            totalCount++; // cuento casos totales que cumplan las condiciones
+            if (data[j][13] == "1")
+            {
+                positiveCounter++;
+            }
+            cout << data[j][13] << '\t' << positiveCounter << '\t' << totalCount << endl;
+        }
+    }
+    if (totalCount == 0) // no encontré ningun caso que cumpla esas condiciones.
+    {
+        return -1;
+    }
+    pi = positiveCounter / totalCount; // Proporción de casos positivos.
+    if (pi != 0)
+        entropy += pi * log2(pi);
+
+    pi = (totalCount - positiveCounter) / totalCount; // Proporción de casos negativos.
+    if (pi != 0)
+        entropy += pi * log2(pi);
+
+    return (-1) * entropy;
+}
+
+/*************************************************************************************************************
+ * Guarda los datos CSVData en formato json en disco y devuelve el json generado
+ **************************************************************************************************************/
 json saveToJsonFile(CSVData data, string path, string csvPath)
 {
     json jsonData = {};
     CSVData heart;
 
-    if (!readCSV("../../heart.csv", heart))
+    if (!readCSV(path, heart))
     {
         cout << "No pudimos leer heart.csv" << endl;
         return jsonData;
@@ -64,7 +153,7 @@ json saveToJsonFile(CSVData data, string path, string csvPath)
     return jsonData;
 }
 
-int dataConditioning(CSVData data)
+CSVData dataConditioning(CSVData data)
 {
     for (auto it = data.begin(); it != data.end(); it++)
     {
@@ -104,7 +193,7 @@ int dataConditioning(CSVData data)
         // Cambio el valor de la depresion
         dataConverter(1, &it[0][9]);
     }
-    return 1;
+    return data;
 }
 
 /*************************************************************************************************************

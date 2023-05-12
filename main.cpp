@@ -58,18 +58,18 @@ double getGain(CSVData data, vector<string> titles, double entropy, map<string, 
 {
     double gain = 0;
 
-    for (int k = 0; k < outcomes; k++)  //por cada Sj
+    for (int k = 0; k < outcomes; k++) // por cada Sj
     {
         attributes[newAttribute] = (char)k + '0';
 
         float wantedCount = 0, totalCount = 0;
         int flagAttr, flagTotal;
         int last = (int)(data.size() * 0.8); // contiene la posicion del ultimo elemento a analizar
-        for (int j = 0; j < last; j++)  // recorre las filas de los datos
+        for (int j = 0; j < last; j++)       // recorre las filas de los datos
         {
             flagTotal = 0;
             flagAttr = 0;
-            for (int i = 0; i < titles.size(); i++) // recorre las columnas de los datos
+            for (int i = 0; i < titles.size() - 1; i++) // recorre las columnas de los datos
             {
                 auto it = attributes.find(titles[i]); // verifico si el atributo de la instancia coincide con alguno que debo fijar
 
@@ -81,7 +81,7 @@ double getGain(CSVData data, vector<string> titles, double entropy, map<string, 
                     }
                     else if (it == attributes.find(newAttribute))
                     {
-                        flagTotal++;    // si cumple con todos menos el nuevo, incremento el flag que cuenta esos casos
+                        flagTotal++; // si cumple con todos menos el nuevo, incremento el flag que cuenta esos casos
                     }
                 }
             }
@@ -89,11 +89,11 @@ double getGain(CSVData data, vector<string> titles, double entropy, map<string, 
             if (flagAttr == attributes.size()) // si el caso cumple todos los atributos
             {
                 wantedCount++; // cuento casos totales que cumplan las condiciones
-                totalCount++;   //cuento casos totales a tener en cuenta
+                totalCount++;  // cuento casos totales a tener en cuenta
             }
-            else if (flagAttr == attributes.size() - 1 && flagTotal > 0)    //si cumple todos menos el nuevo
+            else if (flagAttr == attributes.size() - 1 && flagTotal > 0) // si cumple todos menos el nuevo
             {
-                totalCount++;   //agrego a los casos totales a tener en cuenta
+                totalCount++; // agrego a los casos totales a tener en cuenta
             }
         }
 
@@ -127,7 +127,7 @@ double getEntropy(CSVData data, map<string, string> attributes, vector<string> t
     {
         for (totalCount = 0; totalCount < last; totalCount++)
         {
-            if (data[totalCount][13] == "1")
+            if (data[totalCount][titles.size() - 1] == "1")
             {
                 positiveCounter++; // cuenta casos de output = 1
             }
@@ -147,7 +147,7 @@ double getEntropy(CSVData data, map<string, string> attributes, vector<string> t
     for (j = 0; j < last; j++)
     {
         flag = 0;
-        for (i = 0; i < 13; i++)
+        for (i = 0; i < titles.size() - 1; i++)
         {
             auto it = attributes.find(titles[i]); // verifico si el atributo de la instancia coincide con alguno que debo fijar
             if (it != attributes.end() && (data[j][i] == it->second))
@@ -159,11 +159,11 @@ double getEntropy(CSVData data, map<string, string> attributes, vector<string> t
         if (flag == attributes.size()) // si el caso cumple todos los atributos
         {
             totalCount++; // cuento casos totales que cumplan las condiciones
-            if (data[j][13] == "1")
+            if (data[j][titles.size() - 1] == "1")
             {
                 positiveCounter++;
             }
-            // cout << data[j][13] << '\t' << positiveCounter << '\t' << totalCount << endl;
+            // cout << data[j][titles.size() - 1 ] << '\t' << positiveCounter << '\t' << totalCount << endl;
         }
     }
     if (totalCount == 0) // no encontré ningun caso que cumpla esas condiciones.

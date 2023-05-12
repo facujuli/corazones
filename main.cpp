@@ -13,6 +13,9 @@ void dataConverter(int separator, string *data);
 json saveToJsonFile(CSVData data, string path, string csvPath);
 double getEntropy(CSVData data, map<string, string> attributes, vector<string> titles);
 double getGain(CSVData data, vector<string> titles, double entropy, map<string, string> attributes, string newAttribute, int outcomes);
+json buildTree(CSVData data, vector<string> titles, map<string, string> usedNodes);
+map<string, int> getOutcomes(CSVData data, vector<string> titles);
+string charToString(char c);
 
 int main(void)
 {
@@ -52,6 +55,103 @@ int main(void)
     // json jsonData = saveToJsonFile(heart, "jsonData.json", "../../heart.csv");
 
     return 0;
+}
+
+json buildJsonTree(int level, int max_level) {
+    json tree;  // crea un nuevo objeto JSON
+    
+    if (level < max_level) {
+        tree["value"] = level;  // agrega una clave "value" con el valor del nivel actual
+        
+        // llama recursivamente a la función para agregar un subárbol
+        tree["child"] = buildJsonTree(level + 1, max_level);
+    }
+    
+    return tree;  // devuelve el objeto JSON resultante
+}
+
+
+
+json buildTree(CSVData data, vector<string> titles, map<string, string> usedNodes, json tree) // llamarla con usedNodes vacio
+{
+    json subTree = {};
+    if (getEntropy(data, usedNodes, titles) == 0 || usedNodes.size() == titles.size() - 1)
+    {
+        // Lo etiqueto
+        auto last = usedNodes.end();
+        last--;
+
+        usedNodes.erase(last); // quito el ultimo nodo de la lista
+
+        
+    }
+    else
+    {
+        // buscar siguiente nodo();  y agregarlo como hoja de el path actual del arbol.
+        int bestNode = 0;
+        double gain, bestGain = 0;
+        auto outcomes = getOutcomes(data, titles);
+
+        for (int i = 0 ; i < titles.size() - 1 ; i++)
+        {
+            if (usedNodes.find(titles[i]) == outcomes.end())
+            {
+                gain = getGain(data, titles, getEntropy(data, usedNodes, titles), usedNodes, titles[i], outcomes[title[i]]);
+                if (gain > bestGain)
+                    bestGain = gain;
+                    bestNode = i;
+            }
+        }
+        usedNodes[titles[bestNode]] = "0";
+
+        
+
+        auto it = usedNodes.end();
+        it--;
+
+        int totalSons = outcomes[it->first]; // accedo a el map que devuelve getoutcomes, en el uso el metodo.find() para buscar el atributo de mi nodo actual
+                           //    seria   it->first;   este metodo devuelve un puntero a ese elemento del map
+                           // accedo al int con puntero->second;
+        int i;
+        for (i = 0; i < totalSons; i++)
+        {
+            char c = i + '0';
+            it->second = charToString(c);
+            subTree[usedNodes[titles[bestNode]]] = buildTree(data, titles, usedNodes);
+        }
+        return;
+    }
+}
+
+string charToString(char c)
+{
+    string str(1, c);
+    return str;
+}
+
+/*************************************************************************************************************
+ * Calcula la cantidad de outcomes de cada atributo
+ **************************************************************************************************************/
+map<string, int> getOutcomes(CSVData data, vector<string> titles)
+{
+    map<string, int> outcomes;
+    int j = 0;
+    for (auto it = data.begin(); it != data.end(); it++)
+    {
+        for (int i = 0; i < it[0].size() - 1; i++)
+        {
+            if (outcomes.find(titles[i]) == outcomes.end()) // si todavia no existe el atributo en el mapa de outcomes lo inicializa en 0
+            {
+                outcomes[titles[i]] = 0;
+            }
+
+            if (std::stoi(it[0][i]) + 1 > outcomes[titles[i]]) // si el outcome es mayor a la cantidad de outcomes aumento la cantidad de outcomes
+                outcomes[titles[i]] = std::stoi(it[0][i]) + 1;
+        }
+        j++;
+    }
+
+    return outcomes;
 }
 
 double getGain(CSVData data, vector<string> titles, double entropy, map<string, string> attributes, string newAttribute, int outcomes)

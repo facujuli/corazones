@@ -11,7 +11,8 @@ using json = nlohmann::json;
 CSVData dataConditioning(CSVData data);
 void dataConverter(int separator, string *data);
 json saveToJsonFile(CSVData data, string path, string csvPath);
-float getEntropy(CSVData data, map<string, string> attributes, vector<string> titles);
+double getEntropy(CSVData data, map<string, string> attributes, vector<string> titles);
+double getGain(CSVData data, vector<string> titles, double entropy, map<string, string> attributes, string newAttribute, int outcomes);
 
 int main(void)
 {
@@ -42,12 +43,68 @@ int main(void)
 
     map<string, string> attributes = {{"age", "1"}, {"sex", "1"}};
 
-    float entropy = getEntropy(heart, attributes, titles);
+    double entropy = getEntropy(heart, attributes, titles);
     cout << entropy << endl;
+
+    double gain = getGain(heart, titles, entropy, attributes, "fbs", 2);
+    cout << gain << endl;
 
     // json jsonData = saveToJsonFile(heart, "jsonData.json", "../../heart.csv");
 
     return 0;
+}
+
+double getGain(CSVData data, vector<string> titles, double entropy, map<string, string> attributes, string newAttribute, int outcomes)
+{
+    double gain = 0;
+
+    for (int k = 0; k < outcomes; k++)  //por cada Sj
+    {
+        attributes[newAttribute] = (char)k + '0';
+
+        float wantedCount = 0, totalCount = 0;
+        int flagAttr, flagTotal;
+        int last = (int)(data.size() * 0.8); // contiene la posicion del ultimo elemento a analizar
+        for (int j = 0; j < last; j++)  // recorre las filas de los datos
+        {
+            flagTotal = 0;
+            flagAttr = 0;
+            for (int i = 0; i < titles.size(); i++) // recorre las columnas de los datos
+            {
+                auto it = attributes.find(titles[i]); // verifico si el atributo de la instancia coincide con alguno que debo fijar
+
+                if (it != attributes.end())
+                {
+                    if ((data[j][i] == it->second))
+                    {
+                        flagAttr++; // si el caso cumple con todos los atributos pedidos, incremento el flag que cuenta estos casos.
+                    }
+                    else if (it == attributes.find(newAttribute))
+                    {
+                        flagTotal++;    // si cumple con todos menos el nuevo, incremento el flag que cuenta esos casos
+                    }
+                }
+            }
+
+            if (flagAttr == attributes.size()) // si el caso cumple todos los atributos
+            {
+                wantedCount++; // cuento casos totales que cumplan las condiciones
+                totalCount++;   //cuento casos totales a tener en cuenta
+            }
+            else if (flagAttr == attributes.size() - 1 && flagTotal > 0)    //si cumple todos menos el nuevo
+            {
+                totalCount++;   //agrego a los casos totales a tener en cuenta
+            }
+        }
+
+        float pj = wantedCount / totalCount; // Proporción de casos queridos.
+        if (pj != 0)
+        {
+            gain += (wantedCount / totalCount) * getEntropy(data, attributes, titles);
+        }
+    }
+
+    return entropy - gain;
 }
 
 /******************************************************************************************************
@@ -58,9 +115,10 @@ int main(void)
  *  Si no encuentra casos que cumplan las condiciones solicitadas ( se le solicitan casos inexistentes),
  * devuelve -1 indicando error.
  *********************************************************************************************************/
-float getEntropy(CSVData data, map<string, string> attributes, vector<string> titles)
+double getEntropy(CSVData data, map<string, string> attributes, vector<string> titles)
 {
-    float entropy = 0, positiveCounter = 0;
+    double entropy = 0;
+    float positiveCounter = 0;
     int last = (int)(data.size() * 0.8); // contiene la posicion del ultimo elemento a analizar
     float pi = 0;
     int totalCount = 0;
@@ -105,7 +163,7 @@ float getEntropy(CSVData data, map<string, string> attributes, vector<string> ti
             {
                 positiveCounter++;
             }
-            //cout << data[j][13] << '\t' << positiveCounter << '\t' << totalCount << endl;
+            // cout << data[j][13] << '\t' << positiveCounter << '\t' << totalCount << endl;
         }
     }
     if (totalCount == 0) // no encontré ningun caso que cumpla esas condiciones.
